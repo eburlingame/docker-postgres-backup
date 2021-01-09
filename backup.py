@@ -70,10 +70,13 @@ def log(msg):
 
 def main():
     start_time = datetime.now()
+
     log("Dumping database")
     take_backup()
+
     log("Uploading to S3")
     upload_backup()
+    
     log("Pruning local backup copies")
     prune_local_backup_files()
     
