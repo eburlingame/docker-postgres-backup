@@ -7,7 +7,6 @@ from datetime import datetime
 
 BACKUP_DIR = os.environ["BACKUP_DIR"]
 S3_PATH = os.environ["S3_PATH"]
-DB_NAME = os.environ["DB_NAME"]
 DB_PASS = os.environ["DB_PASS"]
 DB_USER = os.environ["DB_USER"]
 DB_HOST = os.environ["DB_HOST"]
@@ -18,22 +17,21 @@ WEBHOOK_METHOD = os.environ.get("WEBHOOK_METHOD") or "GET"
 KEEP_BACKUP_DAYS = int(os.environ.get("KEEP_BACKUP_DAYS", 7))
 
 dt = datetime.now()
-file_name = DB_NAME + "_" + dt.strftime("%Y-%m-%d")
+file_name = "postgres_" + dt.strftime("%Y-%m-%d")
 backup_file = os.path.join(BACKUP_DIR, file_name)
 
 if not S3_PATH.endswith("/"):
     S3_PATH = S3_PATH + "/"
 
 def cmd(command):
+    print(command)
+    
     try:
         subprocess.check_output([command], shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         sys.stderr.write("\n".join([
             "Command execution failed. Output:",
-            "-"*80,
-            e.output,
-            "-"*80,
-            ""
+            str(e.output)
         ]))
         raise
 
@@ -46,7 +44,7 @@ def take_backup():
     #    sys.exit(1)
     
     # trigger postgres-backup
-    cmd("env PGPASSWORD=%s pg_dump -Fc -h %s -U %s %s > %s" % (DB_PASS, DB_HOST, DB_USER, DB_NAME, backup_file))
+    cmd("env PGPASSWORD=%s pg_dumpall -h %s -U %s > %s" % (DB_PASS, DB_HOST, DB_USER, backup_file))
 
 def upload_backup():
     cmd("aws s3 cp --storage-class=STANDARD_IA %s %s" % (backup_file, S3_PATH))
@@ -66,7 +64,7 @@ def send_email(to_address, from_address, subject, body):
     })
 
 def log(msg):
-    print "[%s]: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg)
+    print("[%s]: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
 def main():
     start_time = datetime.now()
@@ -85,7 +83,7 @@ def main():
         send_email(
             MAIL_TO,
             MAIL_FROM,
-            "Backup complete: %s" % DB_NAME,
+            "Backup completex",
             "Took %.2f seconds" % (datetime.now() - start_time).total_seconds(),
         )
     

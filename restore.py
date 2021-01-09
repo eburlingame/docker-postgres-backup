@@ -7,7 +7,6 @@ from datetime import datetime
 
 BACKUP_DIR = os.environ["BACKUP_DIR"]
 S3_PATH = os.environ["S3_PATH"]
-DB_NAME = os.environ["DB_NAME"]
 DB_PASS = os.environ["DB_PASS"]
 DB_USER = os.environ["DB_USER"]
 DB_HOST = os.environ["DB_HOST"]
@@ -19,6 +18,8 @@ if not S3_PATH.endswith("/"):
     S3_PATH = S3_PATH + "/"
 
 def cmd(command):
+    print(command)
+    
     try:
         subprocess.check_output([command], shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
@@ -40,11 +41,10 @@ def restore_backup():
         sys.exit(1)
     
     # restore postgres-backup
-    cmd("env PGPASSWORD=%s pg_restore -Fc -h %s -U %s -d %s %s" % (
+    cmd("env PGPASSWORD=%s psql -h %s -U %s -f %s" % (
         DB_PASS, 
         DB_HOST, 
         DB_USER, 
-        DB_NAME, 
         backup_file,
     ))
 
@@ -52,7 +52,7 @@ def download_backup():
     cmd("aws s3 cp %s%s %s" % (S3_PATH, file_name, backup_file))
 
 def log(msg):
-    print "[%s]: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg)
+    print("[%s]: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
 def main():
     start_time = datetime.now()
